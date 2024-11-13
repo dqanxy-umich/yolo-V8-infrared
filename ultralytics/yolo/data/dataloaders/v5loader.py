@@ -119,7 +119,8 @@ def create_dataloader(path,
                       min_items=0,
                       prefix='',
                       shuffle=False,
-                      seed=0):
+                      seed=0,
+                      infrared=False):
     if rect and shuffle:
         LOGGER.warning('WARNING ⚠️ --rect is incompatible with DataLoader shuffle, setting shuffle=False')
         shuffle = False
@@ -137,7 +138,8 @@ def create_dataloader(path,
             pad=pad,
             image_weights=image_weights,
             min_items=min_items,
-            prefix=prefix)
+            prefix=prefix,
+            infrared=infrared)
 
     batch_size = min(batch_size, len(dataset))
     nd = torch.cuda.device_count()  # number of CUDA devices
@@ -453,7 +455,8 @@ class LoadImagesAndLabels(Dataset):
                  stride=32,
                  pad=0.0,
                  min_items=0,
-                 prefix=''):
+                 prefix='',
+                 infrared=False):
         self.img_size = img_size
         self.augment = augment
         self.hyp = hyp
@@ -463,6 +466,7 @@ class LoadImagesAndLabels(Dataset):
         self.mosaic_border = [-img_size // 2, -img_size // 2]
         self.stride = stride
         self.path = path
+        self.infrared = infrared
         self.albumentations = Albumentations(size=img_size) if augment else None
 
         try:
@@ -729,6 +733,9 @@ class LoadImagesAndLabels(Dataset):
         return torch.from_numpy(img), labels_out, self.im_files[index], shapes
 
     def load_image(self, i):
+        #TODO: replace
+        ir_base_path = "C:\\Users\\dt800\\Downloads\\ir\\"
+        use_roboflow = True
         # Loads 1 image from dataset index 'i', returns (im, original hw, resized hw)
         im, f, fn = self.ims[i], self.im_files[i], self.npy_files[i],
         if im is None:  # not cached in RAM
@@ -736,6 +743,26 @@ class LoadImagesAndLabels(Dataset):
                 im = np.load(fn)
             else:  # read image
                 im = cv2.imread(f)  # BGR
+                if self.infrared:
+                    #print(f)
+                    ir_suffix = f[0:f.find(".rf.")]
+                    ir_suffix = ir_suffix[ir_suffix.rfind("\\")+1:]
+                    #TODO bad
+                    ir_suffix = ir_suffix.replace("color", "infrared")
+                    ir_suffix = ir_suffix[:-4] + '.' + ir_suffix[-3:]
+                    if "infrared" in ir_suffix:
+                        print(ir_base_path+ir_suffix)
+                    #print(ir_base_path+ir_suffix)
+                    if os.path.exists(ir_base_path + ir_suffix):
+                        im_ir = np.mean(cv2.resize(cv2.imread(ir_base_path+ir_suffix),(im.shape[1],im.shape[0])), axis = 2)[..., np.newaxis]
+                        print(im_ir.shape)
+                        #TODO: test for reshape
+                        im = np.append(im,im_ir,axis=2) #Load from image
+                        #im = np.append(im,np.ones((im.shape[0],im.shape[1],1)),axis=2)
+                        #print(im)
+                    else:
+                        #Roboflow
+                        im = np.append(im,np.ones((im.shape[0],im.shape[1],1)),axis=2) #Temp infrared channel, load from image later
                 assert im is not None, f'Image Not Found {f}'
             h0, w0 = im.shape[:2]  # orig hw
             r = self.img_size / max(h0, w0)  # ratio

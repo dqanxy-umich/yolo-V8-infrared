@@ -54,7 +54,7 @@ def seed_worker(worker_id):
     random.seed(worker_seed)
 
 
-def build_dataloader(cfg, batch_size, img_path, stride=32, label_path=None, rank=-1, mode="train"):
+def build_dataloader(cfg, batch_size, img_path, stride=32, label_path=None, rank=-1, mode="train", ch=3):
     assert mode in ["train", "val"]
     shuffle = mode == "train"
     if cfg.rect and shuffle:
