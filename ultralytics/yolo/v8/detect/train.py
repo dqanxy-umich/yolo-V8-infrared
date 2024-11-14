@@ -18,6 +18,9 @@ from ultralytics.yolo.utils.plotting import plot_images, plot_results
 from ultralytics.yolo.utils.tal import TaskAlignedAssigner, dist2bbox, make_anchors
 from ultralytics.yolo.utils.torch_utils import de_parallel
 
+from ultralytics.yolo.utils.torch_utils import (fuse_conv_and_bn, initialize_weights, intersect_dicts, make_divisible,
+                                                model_info, scale_img, time_sync)
+
 
 # BaseTrainer python usage
 class DetectionTrainer(BaseTrainer):
@@ -42,7 +45,8 @@ class DetectionTrainer(BaseTrainer):
                                  prefix=colorstr(f'{mode}: '),
                                  shuffle=mode == "train",
                                  seed=self.args.seed,
-                                 ch=4)[0] if self.args.v5loader else \
+                                 ch=4,
+                                 infrared=True)[0] if self.args.v5loader else \
             build_dataloader(self.args, batch_size, img_path=dataset_path, stride=gs, rank=rank, mode=mode)[0]
 
     def preprocess_batch(self, batch):
@@ -61,8 +65,20 @@ class DetectionTrainer(BaseTrainer):
 
     def get_model(self, cfg=None, weights=None, verbose=True):
         model = DetectionModel(cfg, ch=3, nc=self.data["nc"], verbose=verbose)
+        print("wow this is running!")
         if weights:
             model.load(weights)
+            with torch.no_grad():
+                #print(model.model[0].conv.weight)
+                if model.model[0].conv.weight.shape[1] != 4:
+                    z = model.model[0].conv.weight[:,2:3,:,:].detach().clone()
+                    new_weight = torch.cat((model.model[0].conv.weight,z),1)
+                    model.model[0].conv = torch.nn.Conv2d(4, 32, kernel_size=(3, 3), stride=(2, 2), padding=(1, 1), bias=False)
+                    model.model[0].conv.weight = torch.nn.Parameter(new_weight)
+            from ultralytics.yolo.utils.downloads import attempt_download
+
+            #torch.save(model, 'C:\\Users\\dt800\\Documents\\yolo-V8-infrared\\yolov8\\yolov8s2.pt')
+            #print(model)
 
         return model
 

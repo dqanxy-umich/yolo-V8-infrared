@@ -120,6 +120,7 @@ def create_dataloader(path,
                       prefix='',
                       shuffle=False,
                       seed=0,
+                      ch=3,
                       infrared=False):
     if rect and shuffle:
         LOGGER.warning('WARNING ⚠️ --rect is incompatible with DataLoader shuffle, setting shuffle=False')
@@ -700,7 +701,8 @@ class LoadImagesAndLabels(Dataset):
 
         if self.augment:
             # Albumentations
-            img, labels = self.albumentations(img, labels)
+            #print(img.shape)
+            img[:,:,:3], labels = self.albumentations(img[:,:,:3], labels)
             nl = len(labels)  # update after albumentations
 
             # HSV color-space
