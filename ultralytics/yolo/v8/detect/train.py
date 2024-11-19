@@ -46,7 +46,8 @@ class DetectionTrainer(BaseTrainer):
                                  shuffle=mode == "train",
                                  seed=self.args.seed,
                                  ch=4,
-                                 infrared=True)[0] if self.args.v5loader else \
+                                 infrared=self.args.infrared,
+                                 ir_base_path=self.args.ir_base_path)[0] if self.args.v5loader else \
             build_dataloader(self.args, batch_size, img_path=dataset_path, stride=gs, rank=rank, mode=mode)[0]
 
     def preprocess_batch(self, batch):

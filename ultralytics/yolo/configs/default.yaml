@@ -34,6 +34,8 @@ overlap_mask: True # masks should overlap during training
 mask_ratio: 4 # mask downsample ratio
 # Classification
 dropout: 0.0  # use dropout regularization
+infrared: False  # use infrared images for training
+ir_base_path: ""
 
 # Val/Test settings ----------------------------------------------------------------------------------------------------
 val: True # validate/test during training

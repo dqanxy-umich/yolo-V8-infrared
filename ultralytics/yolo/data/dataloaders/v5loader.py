@@ -121,7 +121,8 @@ def create_dataloader(path,
                       shuffle=False,
                       seed=0,
                       ch=3,
-                      infrared=False):
+                      infrared=False,
+                      ir_base_path="C:\\Users\\dt800\\Downloads\\ir\\"):
     if rect and shuffle:
         LOGGER.warning('WARNING ⚠️ --rect is incompatible with DataLoader shuffle, setting shuffle=False')
         shuffle = False
@@ -140,7 +141,8 @@ def create_dataloader(path,
             image_weights=image_weights,
             min_items=min_items,
             prefix=prefix,
-            infrared=infrared)
+            infrared=infrared,
+            ir_base_path = ir_base_path)
 
     batch_size = min(batch_size, len(dataset))
     nd = torch.cuda.device_count()  # number of CUDA devices
@@ -457,7 +459,8 @@ class LoadImagesAndLabels(Dataset):
                  pad=0.0,
                  min_items=0,
                  prefix='',
-                 infrared=False):
+                 infrared=False,
+                 ir_base_path="C:\\Users\\dt800\\Downloads\\ir\\"):
         self.img_size = img_size
         self.augment = augment
         self.hyp = hyp
@@ -736,7 +739,7 @@ class LoadImagesAndLabels(Dataset):
 
     def load_image(self, i):
         #TODO: replace
-        ir_base_path = "C:\\Users\\dt800\\Downloads\\ir\\"
+        ir_base_path = self.ir_base_path
         use_roboflow = True
         # Loads 1 image from dataset index 'i', returns (im, original hw, resized hw)
         im, f, fn = self.ims[i], self.im_files[i], self.npy_files[i],
